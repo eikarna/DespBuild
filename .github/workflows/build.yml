@@ -20,28 +20,19 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Checkout brave-core
+        uses: actions/checkout@v4
+        with:
+          repository: 'brave/brave-core'
+          path: 'brave-browser/src/brave'
+
       - name: Initialize Shallow Build Environment
         run: |
-          cd brave-browser
+          set -ex # Exit on error, print commands
+          cd brave-browser/src/brave 
           npm install
-          npm install -g gclient
 
-          # 1. Buat file konfigurasi .gclient tanpa langsung sync
-          gclient config --name "src" "https://github.com/brave/brave-core.git@master"
-
-          # 2. INI KUNCINYA: Tambahkan konfigurasi shallow clone ke .gclient
-          #    Ini menginstruksikan gclient untuk hanya mengambil commit terakhir (depth=1)
-          echo "solutions[0]['custom_vars'] = {'checkout_depth': 1}" >> .gclient
-          echo "Shallow clone configuration has been injected into .gclient."
-
-          # 3. Jalankan sync dengan konfigurasi yang sudah dimodifikasi
-          #    Flag --with_branch_heads diperlukan untuk beberapa dependensi
-          gclient sync --with_branch_heads --force --reset
-
-          # 4. Jalankan kembali install untuk menyelesaikan setup
-          npm install
-        env:
-          CHROME_DEVEL_SANDBOX: /usr/local/sbin/chrome-devel-sandbox
+          npm run init -- --init --no-history -D --target_os=android --target_arch=arm64
 
       - name: Debloat - Disable Brave Rewards
         run: |
@@ -97,7 +88,7 @@ jobs:
       - name: Build Brave Browser
         run: |
           cd brave-browser
-          npm run build
+          npm run build Release
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
